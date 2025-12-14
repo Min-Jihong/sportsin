@@ -1,1 +1,1 @@
-export type SignupStep = "profile" | "birthDate" | "gender" | "introduction" | "position" | "complete";
+export type SignupStep = "profile" | "birthDate" | "gender" | "introduction" | "complete";

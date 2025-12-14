@@ -15,10 +15,16 @@ class AxiosApiClient {
     if (protectedServer()) return;
 
     this.axios.interceptors.request.use((config) => {
-      const accessToken = getAuthToken();
-      if (accessToken) {
-        config.headers.Authorization = `Bearer ${accessToken}`;
+      // 인증 관련 엔드포인트는 accessToken을 추가하지 않음
+      const isAuthEndpoint = config.url?.includes("/oauth/") || config.url?.includes("/login");
+      
+      if (!isAuthEndpoint) {
+        const accessToken = getAuthToken();
+        if (accessToken) {
+          config.headers.Authorization = `Bearer ${accessToken}`;
+        }
       }
+      
       config.data = cloneDeep(config.data);
       return config;
     });
@@ -46,4 +52,5 @@ class AxiosApiClient {
   }
 }
 
-export const clientApi = new AxiosApiClient().setBaseUrl(`${process.env.NEXT_PUBLIC_API_HOST}/v1`);
+export const commonApi = new AxiosApiClient().setBaseUrl(`${process.env.NEXT_PUBLIC_COMMON_API_HOST}`);
+export const sportsinApi = new AxiosApiClient().setBaseUrl(`${process.env.NEXT_PUBLIC_SPORTSIN_API_HOST}`);

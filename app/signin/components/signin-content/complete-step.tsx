@@ -6,14 +6,21 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { PATHS } from "@/constants/paths";
+import { useSigninDataStore } from "@/signin/lib/stores/use-signin-data-store";
 
 export const CompleteStep = () => {
   const router = useRouter();
+  const { clearData } = useSigninDataStore();
+
   useEffect(() => {
-    setTimeout(() => {
+    const timer = setTimeout(() => {
+      // store 정리
+      clearData();
       router.push(PATHS.home);
     }, 3000);
-  }, [router]);
+
+    return () => clearTimeout(timer);
+  }, [router, clearData]);
   return (
     <AnimationContainer className="flex flex-col items-center justify-center gap-8 w-full px-4 h-full">
       {/* 메인 로딩 스피너 */}

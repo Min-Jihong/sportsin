@@ -5,15 +5,18 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { PATHS } from "@/constants/paths";
 import { delay } from "es-toolkit";
-import { useExchangeCode } from "@/hooks/use-post-login";
+import { usePostLogin } from "@/hooks/use-post-login";
 import { setAuthToken } from "@/lib/utils/auth";
+import { getKakaoTokenFromCode } from "@/lib/utils/kakao";
+import { useSigninDataStore } from "@/signin/lib/stores/use-signin-data-store";
 
 export default function CallbackPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const { mutate: exchangeCode } = useExchangeCode();
+  const { mutate: postLogin } = usePostLogin();
+  const { setData: setSigninData } = useSigninDataStore();
 
   const handleCallback = async () => {
     const code = searchParams.get("code");
@@ -36,32 +39,56 @@ export default function CallbackPage() {
       return;
     }
 
-    // 백엔드를 통해 code를 accessToken으로 교환하고 JWT 받기
-    // 이렇게 하면 accessToken이 브라우저에 노출되지 않아 더 안전합니다
-    const appId = process.env.NEXT_PUBLIC_APP_ID || "";
+    // 카카오 서버에서 code를 access_token으로 교환
+    const kakaoAccessToken = await getKakaoTokenFromCode(code);
 
-    exchangeCode(
+    if (!kakaoAccessToken) {
+      setStatus("error");
+      setErrorMessage("카카오 토큰 교환에 실패했습니다.");
+      await delay(1500);
+      router.push(PATHS.signin);
+      return;
+    }
+
+    // 교환받은 access_token을 백엔드에 전달
+    postLogin(
       {
-        appId,
-        code,
+        providerId: "kakao",
+        appId: "SPORTSIN",
+        accessToken: kakaoAccessToken,
       },
       {
         onSuccess: (userToken) => {
-          // JWT 토큰을 쿠키에 저장
+          // 토큰 저장
           setAuthToken(userToken.accessToken, userToken.expiresAt);
           setStatus("success");
-          delay(1500).then(() => {
-            router.push(PATHS.signin);
-          });
+
+          // name이 없으면 signin으로 이동하고 데이터 저장
+          const shouldGoToSignin = !userToken.name || userToken.name.trim() === "";
+
+          if (shouldGoToSignin) {
+            // signin 페이지에 전달할 데이터 저장
+            setSigninData({
+              imageUrl: userToken.imageUrl,
+              nickname: userToken.nickname,
+              name: userToken.name,
+              userId: userToken.userId,
+            });
+
+            delay(1500).then(() => {
+              router.replace(PATHS.signin);
+            });
+          } else {
+            // name이 있으면 home으로 이동
+            delay(1500).then(() => {
+              router.replace(PATHS.home);
+            });
+          }
         },
         onError: (error) => {
           console.error("OAuth authentication error:", error);
           setStatus("error");
           setErrorMessage(error instanceof Error ? error.message : "인증에 실패했습니다.");
-          // 임시: 로그인 실패해도 다음 페이지로 진행
-          delay(1500).then(() => {
-            router.push(PATHS.signin);
-          });
         },
       }
     );

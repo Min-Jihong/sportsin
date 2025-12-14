@@ -4,15 +4,39 @@ import { Calendar } from "lucide-react";
 import { useRef, useState } from "react";
 import { AnimationContainer } from "./animation-container";
 import { ShimmerText } from "@/components/shimmer-text";
-import { format } from "date-fns";
+import { useSigninDataStore } from "@/signin/lib/stores/use-signin-data-store";
 
 export const BirthDateStep = () => {
-  const [date, setDate] = useState<string>("");
+  const { data: signinData, setData: setSigninData } = useSigninDataStore();
+  
+  // birth가 yyyyMMdd 형태로 저장되어 있으므로 변환
+  const getDateStringFromBirth = (birth?: number): string => {
+    if (!birth) return "";
+    const birthStr = String(birth);
+    if (birthStr.length === 8) {
+      const year = birthStr.substring(0, 4);
+      const month = birthStr.substring(4, 6);
+      const day = birthStr.substring(6, 8);
+      return `${year}-${month}-${day}`;
+    }
+    return "";
+  };
+
+  const [date, setDate] = useState<string>(getDateStringFromBirth(signinData.birth));
   const dateInputRef = useRef<HTMLInputElement>(null);
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedDate = e.target.value;
     setDate(selectedDate);
+    // yyyyMMdd 형태로 변환하여 store에 저장 (예: 20240101)
+    if (selectedDate) {
+      const dateObj = new Date(selectedDate);
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, "0");
+      const day = String(dateObj.getDate()).padStart(2, "0");
+      const yyyyMMdd = parseInt(`${year}${month}${day}`, 10);
+      setSigninData({ birth: yyyyMMdd });
+    }
   };
 
   const handleCalendarClick = () => {
@@ -49,7 +73,7 @@ export const BirthDateStep = () => {
           <Calendar className="size-12 text-blue-400" />
           {date && (
             <div className="text-center">
-              <ShimmerText>{format(date, "yyyy-MM-dd")}</ShimmerText>
+              <ShimmerText>{date}</ShimmerText>
             </div>
           )}
           {!date && (

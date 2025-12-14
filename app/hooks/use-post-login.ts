@@ -1,9 +1,10 @@
 import { useMutation } from "@tanstack/react-query";
 
-import { clientApi } from "@/lib/utils/api";
+import { commonApi } from "@/lib/utils/api";
 import { ENDPOINTS } from "@/constants/end-points";
 
 export interface LoginParams {
+  providerId: string;
   appId: string;
   accessToken: string;
 }
@@ -28,13 +29,7 @@ export interface UserToken {
 
 export const usePostLogin = () => {
   return useMutation<UserToken, Error, LoginParams>({
-    mutationFn: async (params: LoginParams) => clientApi.post<UserToken>(ENDPOINTS.login, params),
-  });
-};
-
-// code를 access_token으로 교환하는 훅 (더 안전한 방법)
-export const useExchangeCode = () => {
-  return useMutation<UserToken, Error, ExchangeCodeParams>({
-    mutationFn: async (params: ExchangeCodeParams) => clientApi.post<UserToken>(ENDPOINTS.exchangeCode, params),
+    mutationFn: async ({ providerId, appId, accessToken }: LoginParams) =>
+      commonApi.post<UserToken>(ENDPOINTS.v1.oauth.detail(providerId), { appId, accessToken }),
   });
 };

@@ -5,6 +5,6 @@ export const SIGNUP_STEPS: Record<SignupStep, string> = {
   birthDate: "생년월일",
   gender: "성별",
   introduction: "자기소개",
-  position: "선호 포지션",
+  // position: "선호 포지션",
   complete: "완료",
 };

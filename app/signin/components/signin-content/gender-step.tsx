@@ -3,9 +3,17 @@
 import { useSignupStepNavigation } from "@/signin/lib/hooks/use-signup-step-navigation";
 import { AnimationContainer } from "./animation-container";
 import { Button } from "@/components/ui/button";
+import { useSigninDataStore } from "@/signin/lib/stores/use-signin-data-store";
 
 export const GenderStep = () => {
   const { nextStep } = useSignupStepNavigation();
+  const { setData: setSigninData } = useSigninDataStore();
+
+  const handleGenderSelect = (gender: "male" | "female") => {
+    setSigninData({ gender });
+    nextStep();
+  };
+
   return (
     <AnimationContainer key="gender" className="flex flex-col gap-8 w-full px-4 h-full justify-center">
       <div className="text-center space-y-2">
@@ -14,11 +22,11 @@ export const GenderStep = () => {
       </div>
 
       <div className="flex flex-col gap-4 w-full max-w-xs mx-auto">
-        <Button onClick={nextStep} size="lg">
+        <Button onClick={() => handleGenderSelect("male")} size="lg">
           <span className="text-2xl">♂</span>
           <span>남자</span>
         </Button>
-        <Button variant="warn" onClick={nextStep} size="lg">
+        <Button variant="warn" onClick={() => handleGenderSelect("female")} size="lg">
           <span className="text-2xl">♀</span>
           <span>여자</span>
         </Button>

@@ -59,6 +59,8 @@ export function StoryUploadModal({ isOpen, onClose, onSave }: StoryUploadModalPr
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [toolMode, setToolMode] = useState<ToolMode>(null);
   const [isEyeDropperActive, setIsEyeDropperActive] = useState(false);
+  const [eyeDropperPosition, setEyeDropperPosition] = useState<{ x: number; y: number } | null>(null);
+  const [isDraggingEyeDropper, setIsDraggingEyeDropper] = useState(false);
   const [textPinchStart, setTextPinchStart] = useState<{ distance: number; fontSize: number } | null>(null);
   const [textRotationStart, setTextRotationStart] = useState<number | null>(null);
 
@@ -119,6 +121,8 @@ export function StoryUploadModal({ isOpen, onClose, onSave }: StoryUploadModalPr
       setImageTransform({ scale: 1, x: 0, y: 0, rotation: 0 });
       setToolMode(null);
       setIsEyeDropperActive(false);
+      setEyeDropperPosition(null);
+      setIsDraggingEyeDropper(false);
     }
   }, [isOpen]);
 
@@ -145,37 +149,72 @@ export function StoryUploadModal({ isOpen, onClose, onSave }: StoryUploadModalPr
     }
   };
 
-  // 이미지에서 색상 추출
-  const extractColorFromImage = useCallback((x: number, y: number): string | null => {
-    if (!imageRef.current || !canvasRef.current) return null;
+  // 이미지에서 색상 추출 (eye dropper 위치 기반)
+  const extractColorFromEyeDropper = useCallback((): string | null => {
+    if (!eyeDropperPosition || !imageRef.current || !imageContainerRef.current) return null;
 
-    const img = imageRef.current;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
+    try {
+      const img = imageRef.current;
+      const container = imageContainerRef.current;
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext("2d");
 
-    if (!ctx) return null;
+      if (!canvas || !ctx) return null;
 
-    const rect = imageContainerRef.current?.getBoundingClientRect();
-    if (!rect) return null;
+      const containerRect = container.getBoundingClientRect();
+      const imgRect = img.getBoundingClientRect();
 
-    // 이미지의 실제 크기와 표시 크기 계산
-    const imgRect = img.getBoundingClientRect();
-    const scaleX = img.naturalWidth / imgRect.width;
-    const scaleY = img.naturalHeight / imgRect.height;
+      // eye dropper 위치를 이미지 좌표로 변환
+      const imgX = ((eyeDropperPosition.x - containerRect.left) / containerRect.width) * imgRect.width;
+      const imgY = ((eyeDropperPosition.y - containerRect.top) / containerRect.height) * imgRect.height;
 
-    // 클릭한 위치를 이미지 좌표로 변환
-    const imgX = (x - imgRect.left) * scaleX;
-    const imgY = (y - imgRect.top) * scaleY;
+      // 이미지가 로드되었는지 확인
+      if (img.complete && img.naturalWidth > 0) {
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
 
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
-    ctx.drawImage(img, 0, 0);
+        // CORS 설정
+        img.crossOrigin = "anonymous";
 
-    const imageData = ctx.getImageData(Math.floor(imgX), Math.floor(imgY), 1, 1);
-    const [r, g, b] = imageData.data;
+        ctx.drawImage(img, 0, 0);
 
-    return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
-  }, []);
+        const scaleX = img.naturalWidth / imgRect.width;
+        const scaleY = img.naturalHeight / imgRect.height;
+        const pixelX = Math.floor((imgX - imgRect.left + containerRect.left) * scaleX);
+        const pixelY = Math.floor((imgY - imgRect.top + containerRect.top) * scaleY);
+
+        const imageData = ctx.getImageData(
+          Math.max(0, Math.min(pixelX, img.naturalWidth - 1)),
+          Math.max(0, Math.min(pixelY, img.naturalHeight - 1)),
+          1,
+          1
+        );
+        const [r, g, b] = imageData.data;
+
+        return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
+      }
+    } catch (error) {
+      // CORS 에러 등이 발생하면 null 반환
+      console.warn("색상 추출 실패:", error);
+      return null;
+    }
+
+    return null;
+  }, [eyeDropperPosition]);
+
+  // Eye dropper 위치 변경 시 색상 추출 (드래그 종료 시에만)
+  useEffect(() => {
+    if (eyeDropperPosition && isEyeDropperActive && selectedTextId && !isDraggingEyeDropper) {
+      // 약간의 지연을 두어 드래그 종료 후 색상 추출
+      const timer = setTimeout(() => {
+        const color = extractColorFromEyeDropper();
+        if (color) {
+          updateTextStyle(selectedTextId, { color });
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [eyeDropperPosition, isEyeDropperActive, selectedTextId, isDraggingEyeDropper, extractColorFromEyeDropper]);
 
   // 이미지 핀치 줌 (마우스 휠)
   const handleImageWheel = useCallback(
@@ -192,20 +231,13 @@ export function StoryUploadModal({ isOpen, onClose, onSave }: StoryUploadModalPr
   // 이미지 드래그 시작
   const handleImageMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      if (selectedTextId || isDraggingText || isEyeDropperActive) {
-        if (isEyeDropperActive && selectedTextId) {
-          const color = extractColorFromImage(e.clientX, e.clientY);
-          if (color) {
-            updateTextStyle(selectedTextId, { color });
-          }
-          setIsEyeDropperActive(false);
-        }
+      if (selectedTextId || isDraggingText) {
         return;
       }
       setIsDraggingImage(true);
       setDragStart({ x: e.clientX - imageTransform.x, y: e.clientY - imageTransform.y });
     },
-    [imageTransform, selectedTextId, isDraggingText, isEyeDropperActive, extractColorFromImage]
+    [imageTransform, selectedTextId, isDraggingText]
   );
 
   // 이미지 드래그
@@ -230,14 +262,6 @@ export function StoryUploadModal({ isOpen, onClose, onSave }: StoryUploadModalPr
   const handleTextMouseDown = useCallback(
     (e: React.MouseEvent, textId: string) => {
       e.stopPropagation();
-      if (isEyeDropperActive) {
-        const color = extractColorFromImage(e.clientX, e.clientY);
-        if (color) {
-          updateTextStyle(textId, { color });
-        }
-        setIsEyeDropperActive(false);
-        return;
-      }
       setSelectedTextId(textId);
       setIsDraggingText(true);
       const text = texts.find((t) => t.id === textId);
@@ -251,13 +275,51 @@ export function StoryUploadModal({ isOpen, onClose, onSave }: StoryUploadModalPr
         }
       }
     },
-    [texts, isEyeDropperActive, extractColorFromImage]
+    [texts]
+  );
+
+  // Eye dropper 클릭 핸들러
+  const handleEyeDropperClick = useCallback(() => {
+    if (isEyeDropperActive) {
+      setIsEyeDropperActive(false);
+      setEyeDropperPosition(null);
+    } else {
+      setIsEyeDropperActive(true);
+      // 초기 위치를 이미지 중앙으로 설정
+      if (imageContainerRef.current) {
+        const rect = imageContainerRef.current.getBoundingClientRect();
+        setEyeDropperPosition({
+          x: rect.left + rect.width / 2,
+          y: rect.top + rect.height / 2,
+        });
+      }
+    }
+  }, [isEyeDropperActive]);
+
+  // Eye dropper 드래그 시작
+  const handleEyeDropperMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setIsDraggingEyeDropper(true);
+      if (eyeDropperPosition) {
+        setDragStart({ x: e.clientX - eyeDropperPosition.x, y: e.clientY - eyeDropperPosition.y });
+      }
+    },
+    [eyeDropperPosition]
   );
 
   // 전역 마우스 이벤트
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (isDraggingImage) {
+      if (isDraggingEyeDropper) {
+        const container = imageContainerRef.current;
+        if (container) {
+          const rect = container.getBoundingClientRect();
+          const x = Math.max(rect.left, Math.min(rect.right, e.clientX));
+          const y = Math.max(rect.top, Math.min(rect.bottom, e.clientY));
+          setEyeDropperPosition({ x, y });
+        }
+      } else if (isDraggingImage) {
         setImageTransform({
           ...imageTransform,
           x: e.clientX - dragStart.x,
@@ -283,9 +345,10 @@ export function StoryUploadModal({ isOpen, onClose, onSave }: StoryUploadModalPr
     const handleMouseUp = () => {
       setIsDraggingImage(false);
       setIsDraggingText(false);
+      setIsDraggingEyeDropper(false);
     };
 
-    if (isDraggingImage || isDraggingText) {
+    if (isDraggingImage || isDraggingText || isDraggingEyeDropper) {
       window.addEventListener("mousemove", handleMouseMove);
       window.addEventListener("mouseup", handleMouseUp);
       return () => {
@@ -293,7 +356,7 @@ export function StoryUploadModal({ isOpen, onClose, onSave }: StoryUploadModalPr
         window.removeEventListener("mouseup", handleMouseUp);
       };
     }
-  }, [isDraggingImage, isDraggingText, selectedTextId, dragStart, imageTransform]);
+  }, [isDraggingImage, isDraggingText, isDraggingEyeDropper, selectedTextId, dragStart, imageTransform]);
 
   // 터치 이벤트
   const [touchStart, setTouchStart] = useState<{ x: number; y: number; distance: number; angle: number } | null>(null);
@@ -719,6 +782,23 @@ export function StoryUploadModal({ isOpen, onClose, onSave }: StoryUploadModalPr
                   ))}
                 </div>
 
+                {/* Eye Dropper 아이콘 (이미지 위에 배치) */}
+                {isEyeDropperActive && eyeDropperPosition && (
+                  <div
+                    className="absolute z-40 cursor-move"
+                    style={{
+                      left: `${eyeDropperPosition.x}px`,
+                      top: `${eyeDropperPosition.y}px`,
+                      transform: "translate(-50%, -50%)",
+                    }}
+                    onMouseDown={handleEyeDropperMouseDown}
+                  >
+                    <div className="bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-lg border-2 border-blue-500">
+                      <Droplet className="size-6 text-blue-500" />
+                    </div>
+                  </div>
+                )}
+
                 {/* 사이드바 도구 */}
                 <div className="absolute right-0 top-1/2 -translate-y-1/2 flex flex-col gap-2 p-2 z-20">
                   <button
@@ -762,7 +842,7 @@ export function StoryUploadModal({ isOpen, onClose, onSave }: StoryUploadModalPr
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 items-center z-30">
                     {/* Eye Dropper 버튼 */}
                     <button
-                      onClick={() => setIsEyeDropperActive(!isEyeDropperActive)}
+                      onClick={handleEyeDropperClick}
                       className={cn(
                         "size-10 rounded-full border-2 flex items-center justify-center transition-all",
                         isEyeDropperActive

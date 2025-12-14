@@ -24,9 +24,10 @@ export default function Home() {
   return (
     <div className="flex items-center justify-center h-screen bg-black">
       <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0, scale: 1.1 }}
-        transition={{ duration: 1, ease: "easeOut" }}
+        layoutId="shared-logo"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
       >
         <Logo className="w-[212px] h-[72px]" />
       </motion.div>

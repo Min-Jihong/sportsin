@@ -5,7 +5,6 @@ import { UploadProfileStep } from "./upload-profile-step";
 import { BirthDateStep } from "./birth-date-step";
 import { GenderStep } from "./gender-step";
 import { IntroductionStep } from "./introduction-step";
-import { PositionStep } from "./position-step";
 import { CompleteStep } from "./complete-step";
 import { AnimatePresence } from "framer-motion";
 
@@ -20,7 +19,7 @@ export const SigninContent = () => {
           .with("birthDate", () => <BirthDateStep />)
           .with("gender", () => <GenderStep />)
           .with("introduction", () => <IntroductionStep />)
-          .with("position", () => <PositionStep />)
+          // .with("position", () => <PositionStep />)
           .with("complete", () => <CompleteStep />)
           .exhaustive()}
       </AnimatePresence>

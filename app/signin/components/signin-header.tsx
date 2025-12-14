@@ -14,7 +14,7 @@ export const SigninHeader = () => {
   const totalSteps = Object.keys(SIGNUP_STEPS).length;
 
   return (
-    <div className="w-full h-20">
+    <div className="w-full min-h-20">
       <div className="flex flex-col h-full">
         <div className="flex items-center gap-2 h-full px-4">
           <Button
