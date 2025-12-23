@@ -8,7 +8,7 @@ import { delay } from "es-toolkit";
 import { usePostLogin } from "@/hooks/use-post-login";
 import { setAuthToken } from "@/lib/utils/auth";
 import { getKakaoTokenFromCode } from "@/lib/utils/kakao";
-import { useSigninDataStore } from "@/signin/lib/stores/use-signin-data-store";
+import { useSigninDataStore } from "@/(protected)/signin/lib/stores/use-signin-data-store";
 
 export default function CallbackPage() {
   const router = useRouter();

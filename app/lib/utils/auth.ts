@@ -12,7 +12,7 @@ export const getAuthToken = (): string | null => {
     // = 이후의 모든 값을 가져오기 위해 split 후 slice 사용
     const tokenValue = tokenCookie.split("=").slice(1).join("=");
     const token = decodeURIComponent(tokenValue);
-    
+
     // 디버깅: 토큰이 제대로 읽혔는지 확인 (너무 자주 로그가 찍히지 않도록 조건부)
     if (token && process.env.NODE_ENV === "development") {
       // 개발 환경에서만 로그 출력 (너무 자주 찍히지 않도록)
@@ -45,16 +45,16 @@ export const setAuthToken = (token: string, expiresAt: number) => {
   // URL 인코딩하여 특수문자 처리
   const encodedToken = encodeURIComponent(token);
   document.cookie = `${AUTH_TOKEN_COOKIE_NAME}=${encodedToken}; path=/; max-age=${finalMaxAge}; SameSite=Lax`;
-  
+
   // 디버깅: 토큰이 제대로 설정되었는지 확인
   if (process.env.NODE_ENV === "development") {
-    console.log("Auth token set:", { 
-      token: token.substring(0, 20) + "...", 
+    console.log("Auth token set:", {
+      token: token.substring(0, 20) + "...",
       expiresAt,
       expiresAtMs,
       maxAge,
       finalMaxAge,
-      expiresAtDate: new Date(expiresAtMs).toISOString()
+      expiresAtDate: new Date(expiresAtMs).toISOString(),
     });
   }
 };

@@ -17,14 +17,14 @@ class AxiosApiClient {
     this.axios.interceptors.request.use((config) => {
       // 인증 관련 엔드포인트는 accessToken을 추가하지 않음
       const isAuthEndpoint = config.url?.includes("/oauth/") || config.url?.includes("/login");
-      
+
       if (!isAuthEndpoint) {
         const accessToken = getAuthToken();
         if (accessToken) {
           config.headers.Authorization = `Bearer ${accessToken}`;
         }
       }
-      
+
       config.data = cloneDeep(config.data);
       return config;
     });
