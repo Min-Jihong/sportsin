@@ -61,7 +61,7 @@ export interface Profile {
 export const usePostProfilesPlayers = () => {
   return useMutation<Profile, Error, { profile: PlayerProfile }>({
     mutationFn: async ({ profile }) => {
-      return sportsinApi.post<Profile>(ENDPOINTS.v1.profiles.players, profile);
+      return sportsinApi.post<Profile>(ENDPOINTS.v1.profiles.players.create, profile);
     },
   });
 };

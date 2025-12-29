@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { PATHS } from "@/constants/paths";
@@ -10,7 +10,7 @@ import { setAuthToken } from "@/lib/utils/auth";
 import { getKakaoTokenFromCode } from "@/lib/utils/kakao";
 import { useSigninDataStore } from "@/(protected)/signin/lib/stores/use-signin-data-store";
 
-export default function CallbackPage() {
+function CallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
@@ -131,5 +131,22 @@ export default function CallbackPage() {
         )}
       </motion.div>
     </div>
+  );
+}
+
+export default function CallbackPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen bg-black">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-white/20 border-t-blue-500 rounded-full animate-spin" />
+            <p className="text-white/70">로그인 처리중...</p>
+          </div>
+        </div>
+      }
+    >
+      <CallbackContent />
+    </Suspense>
   );
 }

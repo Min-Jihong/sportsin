@@ -1,7 +1,7 @@
 "use client";
 
 import { PATHS } from "@/constants/paths";
-import useGetProfilesPlayers from "@/hooks/use-get-profiles-players";
+import { useGetProfilesPlayers } from "@/hooks/use-get-profiles-players";
 import { useRouter } from "next/navigation";
 import { Fragment, useEffect } from "react";
 

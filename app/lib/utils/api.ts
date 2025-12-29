@@ -52,5 +52,6 @@ class AxiosApiClient {
   }
 }
 
-export const commonApi = new AxiosApiClient().setBaseUrl(`${process.env.NEXT_PUBLIC_COMMON_API_HOST}`);
-export const sportsinApi = new AxiosApiClient().setBaseUrl(`${process.env.NEXT_PUBLIC_SPORTSIN_API_HOST}`);
+// Use local API routes to avoid CORS issues
+export const commonApi = new AxiosApiClient().setBaseUrl("/api/common");
+export const sportsinApi = new AxiosApiClient().setBaseUrl("/api/sportsin");
