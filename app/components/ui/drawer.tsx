@@ -13,6 +13,7 @@ export interface DrawerProps {
   showCloseButton?: boolean;
   closeOnOverlayClick?: boolean;
   className?: string;
+  fullScreen?: boolean;
 }
 
 export const Drawer = ({
@@ -23,6 +24,7 @@ export const Drawer = ({
   showCloseButton = true,
   closeOnOverlayClick = true,
   className,
+  fullScreen = false,
 }: DrawerProps) => {
   useEffect(() => {
     if (isOpen) {
@@ -48,13 +50,13 @@ export const Drawer = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center">
+        <div className={cn("fixed inset-0 z-50 flex", fullScreen ? "items-stretch" : "items-end justify-center")}>
           {/* Overlay */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
             onClick={closeOnOverlayClick ? onClose : undefined}
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
           />
@@ -62,11 +64,26 @@ export const Drawer = ({
           {/* Drawer Content */}
           <motion.div
             initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            animate={{
+              y: 0,
+              transition: {
+                type: "spring",
+                stiffness: 300,
+                damping: 35,
+                mass: 0.8,
+              },
+            }}
+            exit={{
+              y: "100%",
+              transition: {
+                type: "tween",
+                duration: 0.5,
+                ease: [0.25, 0.46, 0.45, 0.94],
+              },
+            }}
             className={cn(
-              "relative w-full max-w-md bg-gray-900 border-t border-gray-800 rounded-t-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col",
+              "relative w-full bg-gray-900 border-t border-gray-800 shadow-2xl overflow-hidden flex flex-col",
+              fullScreen ? "h-full rounded-none" : "max-w-md rounded-t-2xl max-h-[90vh]",
               className
             )}
           >
@@ -95,4 +112,3 @@ export const Drawer = ({
     </AnimatePresence>
   );
 };
-

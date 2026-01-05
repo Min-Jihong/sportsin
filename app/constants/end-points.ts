@@ -2,6 +2,12 @@ export const ENDPOINTS = {
   login: "/oauth/kakao",
   exchangeCode: "/oauth/kakao/exchange",
   v1: {
+    // Announcements
+    announcements: {
+      create: "/v1/announcements",
+      update: (uuid: string) => `/v1/announcements/${uuid}`,
+      delete: (uuid: string, teamId: string) => `/v1/announcements/${uuid}?teamId=${teamId}`,
+    },
     // OAuth
     oauth: {
       detail: (providerId: string) => `/v1/oauth/${providerId}`,

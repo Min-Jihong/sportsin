@@ -4,38 +4,42 @@ import { Team } from "@/lib/types/team";
 import { ProfileSection } from "../../../componets/profile-section";
 import { SummarySection } from "./summary-section";
 import { CaretDown } from "@phosphor-icons/react";
-import { useTeamDetail } from "@/hooks/use-team-profiles";
 import { Carousel } from "@/components/ui/carousel";
 import { ProfileImage } from "@/(protected)/(sigined)/componets/image";
+import { isEmpty } from "es-toolkit/compat";
+import { AnnouncementsSection } from "./announcements-section";
 
 interface TeamDetailViewProps {
-  teamId: string;
+  teamDetail?: Team;
   teams?: Team[];
-  onDrawerOpen?: () => void;
+  isStaff: boolean;
+  onDrawerOpen: (type: "team-selector" | "announcement-editor" | "announcement-list") => void;
 }
 
-export const TeamDetailView = ({ teamId, teams, onDrawerOpen = () => {} }: TeamDetailViewProps) => {
-  const { data: teamDetail } = useTeamDetail(teamId);
-
+export const TeamDetailView = ({ teamDetail, teams, isStaff, onDrawerOpen = () => {} }: TeamDetailViewProps) => {
   return (
     <div className="w-full h-full overflow-y-auto">
       <ProfileSection backgroundImageUrl={teamDetail?.backgroundImageUrl} playerImageUrl={teamDetail?.logoImageUrl} />
       <div className="flex flex-col gap-4 px-4">
-        <button className="flex items-center gap-2 w-fit hover:opacity-80 transition-opacity" onClick={onDrawerOpen}>
+        <button
+          className="flex items-center gap-2 w-fit hover:opacity-80 transition-opacity"
+          onClick={() => onDrawerOpen("team-selector")}
+        >
           <h1 className="text-2xl font-bold">{teamDetail?.name}</h1>
           {teams && teams.length > 1 && <CaretDown className="size-5 text-gray-400" />}
         </button>
         <SummarySection matches={teamDetail?.matches} grade={teamDetail?.grade} league={teamDetail?.league} />
+        <AnnouncementsSection announcements={teamDetail?.announcements} isStaff={isStaff} onDrawerOpen={onDrawerOpen} />
         <div className="flex flex-col gap-2">
           <p className="text-sm text-gray-500">선수 목록</p>
-          {teamDetail?.squads && teamDetail.squads.length > 0 ? (
+          {!isEmpty(teamDetail?.squads) && (
             <Carousel
               className="w-full"
               itemClassName="w-[calc(33.333%-11px)] min-w-[calc(33.333%-11px)]"
               gap={16}
-              showArrows={teamDetail.squads.length > 3}
+              showArrows={teamDetail!.squads!.length > 3}
             >
-              {teamDetail.squads.map((squad) => (
+              {teamDetail!.squads!.map((squad) => (
                 <div key={squad.playerId} className="flex flex-col items-center gap-2 p-3 rounded-lg">
                   <ProfileImage
                     imageUrl={squad.playerImageUrl}
@@ -45,9 +49,8 @@ export const TeamDetailView = ({ teamId, teams, onDrawerOpen = () => {} }: TeamD
                 </div>
               ))}
             </Carousel>
-          ) : (
-            <p className="text-sm text-gray-400">등록된 선수가 없습니다.</p>
           )}
+          {isEmpty(teamDetail?.squads) && <p className="text-sm text-gray-400">등록된 선수가 없습니다.</p>}
         </div>
         <div className="flex flex-col gap-2">
           <p className="text-sm text-gray-500">리뷰 목록</p>

@@ -4,6 +4,12 @@ export interface Review {
   count: number;
 }
 
+export interface Announcement {
+  message: string;
+  uuid: string;
+  createdAt: number;
+}
+
 export interface Team {
   teamId: string;
   name: string;
@@ -25,6 +31,7 @@ export interface Team {
   createdAt?: number;
   matches?: number;
   reviews?: Review[];
+  announcements?: Announcement[];
 }
 
 export interface TeamMember {
